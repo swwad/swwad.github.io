@@ -24,47 +24,8 @@
 - Sniffer / Reverse Engineering
 - 藍芽 / BLE 相關技術
 
-## 開發工具與語言
-
-### Microsoft / Windows
-- C#
-- ASP.Net (Web Form / MVC)
-- Visual Studio
-- MS SQL-Server
-- Delphi
-
-### Android
-- Java
-- Android Studio
-- Eclipse
-
-### 嵌入式系統
-- C/C++
-- Nordic Solution
-- Keil C
-- IAR System
-
-## 技術成果與專利
-
-### 專利
-- 停車場智慧導航系統
-- 即時運動團體練習系統及其應用方法
-- 操控裝置
-
-### 開發產品
-- 智慧鏡系統 (Java in Android)
-- BLE 穿戴式設備智慧手環 (Embedded C)
-- 行動裝置應用程式開發 (Java in Android)
-- 雲端路況回報系統 (Java in Android)
-- 加油站自動化控制設備 (Delphi in Windows)
-- 自助加油系統 (C/C++ in Embedded Linux)
-- 自動售票系統 (C# in Windows)
-- POS 銷售系統 (C/C++ Embedded in Linux, VB.Net in Windows)
-
-## 技術認證
-- SQL Server 效能調效
-- SQL Server 2016 開發認證
-- F-ISAC 金融資安攻防演練 Cyberbit 培訓
+### AI 與機器學習
+- [大型語言模型訓練與微調技術](https://swwad.github.io/llm-finetuning)
 
 ## 開發領域
 
