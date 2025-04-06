@@ -1,172 +1,157 @@
-# LLM 微調學習歷程
+# LLM 模型微調學習筆記
 
-## 緣起
+## 前言
 
-我很早以前就思考能否利用 AI 搭配即時通訊軟體，作為往生者回應對話的延伸，在面對意外時藉由 LLM 技術安撫在世的人。近年 AI 技術發展神速，終於讓一般人也能依照個人資料訓練模擬特定風格的模型，以下是我的學習過程。
+這是我嘗試將日常對話記錄轉換為 LLM 訓練資料的實驗記錄。目標是透過個人對話風格來微調模型，讓 AI 能捕捉到個人特有的語氣和表達方式。
 
-## 資料準備
+[返回主頁](index.html)
 
-### 對話紀錄轉換
+## 資料處理流程概述
 
-首先我導出 LINE 的對話紀錄，格式如下：
+整個微調資料準備過程分為四個主要步驟：
+
+1. 第一次使用 LM Studio + Gemma 3 4b 處理對話記錄
+2. 資料格式轉換與初步清洗 
+3. 使用 OpenAI API 進行二次深度清洗
+4. 最終資料整理與驗證
+
+## 資料清洗進化過程
+
+從原始對話到高品質訓練資料，經歷了多次精煉階段，每一步都顯著提升了資料質量：
+
+### 原始資料（聊天記錄）
+```
+2023/03/09（四）
+10:37	Darren	連落洗衣機了嗎
+10:42	Chun	有。說會跟我聯繫
+10:43	Darren	啥時回來？
+10:43	Darren	會
+10:43	Chun	等師傅打來啊
+10:44	Chun	不知道哦。還沒接到電話
+```
+
+### 初步轉換（LM Studio + Gemma 3 4b）
+```json
+{"instruction":"惠而浦安裝","input":"你在家？你要可以嗎？","output":"我可以來了，你慢慢來"}
+{"instruction":"生活協調","input":"連落洗衣機了嗎 Chun會跟我聯繫嗎？","output":"都可以欸，看你想吃什麼"}
+```
+👆 問題：內容混淆、上下文丟失、回應不匹配
+
+### 首次技術清洗（程式碼處理）
+```json
+{"instruction":"生活協調","input":"連落洗衣機了嗎","output":"啥時回來？會"}
+{"instruction":"夫妻日常","input":"晚上想吃什麼？想去吃火鍋","output":"都可以欸，看你想吃什麼"}
+```
+👆 改進：移除了特殊符號、表情，但對話上下文仍不完整
+
+### 最終優化結果（OpenAI API 處理）
+```json
+{"instruction":"安裝家電","input":"你在家嗎？惠而浦要安裝了","output":"恩恩，我可以來了，你慢慢來"}
+{"instruction":"生活協調","input":"連落洗衣機了嗎 Chun會跟我聯繫嗎？","output":"恩恩，我會去看看，不用擔心"}
+{"instruction":"討論晚餐","input":"晚上想吃什麼？想去吃火鍋","output":"都可以欸，看你想吃什麼"}
+{"instruction":"生活協調","input":"你要下班了嗎？我來接你","output":"恩恩好der，可以來了，你慢慢來"}
+```
+👆 成果：保留了特徵性語氣（「恩恩」、「好der」）、清晰的對話意圖、內容連貫性
+
+## Step 3: 使用 OpenAI API 進行深度資料清洗
+
+為提高訓練資料品質，使用 OpenAI API 進行更精準的資料清洗與改進，針對內容進行意圖分類、格式標準化以及上下文關聯性處理。
+
+設計了精心的提示詞系統：
 
 ```
-18:57 Darren 一起吃晚飯？
-18:57 Darren 泰式？
-19:05 Chun 好
-19:07 Chun 哪等
-19:07 Chun 土城？
-19:07 Darren 看你
-19:08 Darren 現在要搭捷運
-19:09 Darren 還是想吃花雕雞？
+## 核心目標
+將對話提煉為高品質訓練樣本，嚴格捕捉 Darren 的語氣、口頭禪與對話風格，排除干擾元素。
+
+## 角色定義
+- **Darren（丈夫）**：模型模仿對象，回應作為 **output**
+- **Chun（妻子）**：對話引導者，話語作為 **input**
+
+## 語言特徵
+Darren 特徵：
+- 口頭禪："恩恩"、"好der"、"看你"
+- 標點習慣："~"、"! "
+- 句式：簡短直接
 ```
 
-原本打算直接用 ChatGPT 將對話紀錄轉為高品質的 JSON 資料，但考慮到資料量龐大且不想將對話隱私上傳雲端，因此決定自行開發解決方案。
-
-### 資料處理工具開發
-
-我使用 LINQPad 開發了專用的解析器，下面是核心功能的程式碼片段及說明：
-
-#### 主要處理流程
-
+API 處理流程：
 ```csharp
-// 主要處理流程
-async Task<int> ProcessChatLogByDayWithImmediateWriteAsync(string chatLogFilePath, string apiUrl, string modelName, string outputFilePath)
+async Task<string> ProcessDataWithOpenAI(
+    HttpClient client, 
+    string endpoint, 
+    TrainingData data, 
+    string systemPrompt, 
+    string userPromptTemplate,
+    string modelName)
 {
-    int totalObjectsProcessed = 0;
+    // 準備使用者提示詞
+    string userPrompt = userPromptTemplate
+        .Replace("{instruction}", data.Instruction)
+        .Replace("{input}", data.Input)
+        .Replace("{output}", data.Output);
     
-    // 讀取整個聊天紀錄檔案
-    string[] allLines = File.ReadAllLines(chatLogFilePath);
-    
-    // 儲存每天的對話
-    Dictionary<string, List<string>> conversationsByDay = new Dictionary<string, List<string>>();
-    
-    // 當前日期
-    string currentDate = "";
-    
-    // 逐行讀取並根據日期分組
-    foreach (string line in allLines)
-    {
-        // 檢查是否為日期行（格式如 2023/02/28（二））
-        if (IsDateLine(line))
-        {
-            currentDate = line.Trim();
-            if (!conversationsByDay.ContainsKey(currentDate))
-            {
-                conversationsByDay[currentDate] = new List<string>();
-            }
-            conversationsByDay[currentDate].Add(currentDate);
+    // 發送請求至 OpenAI API
+    var request = new OpenAIRequest {
+        model = modelName,
+        messages = new List<Message> {
+            new Message { role = "system", content = systemPrompt },
+            new Message { role = "user", content = userPrompt }
         }
-        else if (!string.IsNullOrWhiteSpace(line) && !string.IsNullOrWhiteSpace(currentDate))
-        {
-            conversationsByDay[currentDate].Add(line);
-        }
-    }
+    };
     
-    // 逐一日期處理
-    foreach (var date in conversationsByDay.Keys)
-    {
-        Console.WriteLine($"正在處理 {date} 的對話...");
-        
-        // 將當日對話轉換為單一字串
-        string dayConversation = string.Join("\n", conversationsByDay[date]);
-        
-        // 呼叫 API
-        var jsonObjects = await CallLMStudioApiAsync(apiUrl, modelName, dayConversation);
-        
-        if (jsonObjects != null && jsonObjects.Count > 0)
-        {
-            // 立即寫入檔案
-            foreach (string jsonObject in jsonObjects)
-            {
-                File.AppendAllText(outputFilePath, jsonObject + Environment.NewLine);
-                totalObjectsProcessed++;
-            }
-        }
-    }
-    
-    return totalObjectsProcessed;
+    // 處理回應...
 }
 ```
 
-### 提示詞設計
-
-為了讓 Gemma3 4b 模型能有效轉換對話紀錄，我設計了專門的提示詞。以下是提示詞的關鍵部分：
-
-```
-對話紀錄轉模型訓練 JSON（Gemma3-4b 專用強化版）
-
-核心任務：
-將 Darren 與 Chun 的對話紀錄轉換為嚴格過濾的高品質 JSON 訓練資料，專為 Gemma3-4b 小型模型優化。
-
-強制過濾規則（無例外執行）：
-1. **絕對禁止包含以下任何元素的訓練對話**：
-   - 任何 URL/超連結（包含 http://、https://、www.、.com、.tw 等網址片段）
-   - 任何非文字元素標記（[貼圖]、[照片]、[圖片]、[影像]、[語音]、[檔案]）
-   - 任何不完整或意義不明的對話
-   - 任何一方發送相同非文字元素的情況（如：input:[貼圖], output:[貼圖]）
-
-輸出 JSON 格式：
-[
-  {
-    "instruction": "極度簡潔的意圖標籤（2-5字）",
-    "input": "Chun 的話語（清晰明確）",
-    "output": "Darren 的回應（自然對話風格）"
-  }
-]
-
-處理流程與嚴格篩選：
-
-1. **前置檢查**（必須逐一執行）：
-   - 檢查原始文本是否包含禁止元素（URL、[貼圖]等）
-   - 檢查對話是否有明確的上下文和意義
-   - 檢查對話長度是否適合（過短或過長都不適合）
-
-2. **instruction 生成**：
-   - 限定 2-5 個字的極簡標籤
-   - 直接標示交互意圖（如：詢問意見、分享煩惱、討論計畫）
-
-3. **input 處理**：
-   - 保留原始話語的核心意義
-   - 確保語意完整，避免不明確或過於簡短的表達
-
-4. **output 處理**：
-   - 完整保留原始回應的語氣和用詞特點
-   - 確保回應與 input 邏輯對應
-```
-
-提示詞中特別強調了 Gemma3-4b 小型模型的特性考量：
-- 保持數據簡潔：避免過長的對話
-- 確保語意明確：每組對話都應有明確的目的
-- 優先自然對話：重視日常對話模式的學習
-- 避免過於特殊的情境：優先普適性的對話模式
-
-## 訓練資料成果
-
-經過處理後，成功產出符合訓練格式的 JSON 資料，例如：
-
+第二次清洗後的最終成果：
 ```json
-{"instruction":"工作安排","input":"認真上班窩","output":"好"}
-
-{"instruction":"晚餐安排","input":"晚上吃什麼","output":"我再去買好了，還是有點餓"}
-
-{"instruction":"確認上班","input":"到公司了嗎","output":"到了"}
-
-{"instruction":"提醒飼料","input":"記得補飼料","output":"監視器線好像掉了"}
-
-{"instruction":"詢問除蟎效果","input":"除蟎後媽媽有睡得比較好嗎？","output":"她應該沒有什麼感覺"}
-
-{"instruction":"商議回家路","input":"你要把12街上去嗎","output":"還是我下班過去"}
-
-{"instruction":"討論晚餐","input":"你想吃什麼？我今天不想煮飯","output":"叫外送吧，我想吃那家泰式料理"}
+{"instruction":"安裝家電","input":"你在家嗎？惠而浦要安裝了","output":"恩恩，我可以來了，你慢慢來"}
+{"instruction":"生活協調","input":"連落洗衣機了嗎 Chun會跟我聯繫嗎？","output":"恩恩，我會去看看，不用擔心"}
+{"instruction":"討論晚餐","input":"晚上想吃什麼？想去吃火鍋","output":"都可以欸，看你想吃什麼"}
+{"instruction":"生活協調","input":"你要下班了嗎？我來接你","output":"恩恩好der，可以來了，你慢慢來"}
 ```
 
-## 目前進度
+這次處理明顯改善了資料品質：
+- 保留了特徵性語氣「恩恩」、「好der」等口頭禪
+- 對話意圖更加清晰，通過 instruction 標籤精確分類
+- 內容上下文連貫性大幅改善
+- 人物對話風格更加一致和自然
 
-1. **資料隱私處理的重要性**：自建工具可以有效控制隱私風險
-2. **本地化 API 的便利性**：使用 LM Studio 搭配 Gemma3-4b 可在本地處理資料
-3. **提示詞設計的關鍵作用**：清晰的指令和篩選標準能大幅提升資料質量
-4. **資料格式的重要性**：合適的 instruction/input/output 格式對模型學習至關重要
-5. **過濾機制的必要性**：嚴格的過濾確保訓練資料的乾淨和一致性
+處理過程中的資料統計：
+- 處理資料：569 筆
+- API 使用總量：501,376 tokens / 596 請求
+- 花費：$0.81 USD (總預算 $10 USD)
 
-未來計劃進一步優化模型訓練方法，並探索更多應用場景，希望能讓這項技術真正服務於情感需求，成為生命延續的另一種可能。
+## 資料清洗的關鍵價值發現
+
+在多層次清洗過程中，得到了幾個關鍵洞察：
+
+1. **提示詞設計至關重要**
+   - 精確的提示詞能引導 API 理解如何保留人物特色語氣
+   - 細節處理指南（如保留特定口頭禪）顯著提高資料品質
+
+2. **資源與成本管理**
+   - 本地模型處理初步清洗，保護隱私的同時降低成本
+   - OpenAI API 用於高質量精煉，$0.81 投資獲得 345 筆優質樣本
+
+3. **資料品質進階**
+   - 簡單移除雜訊 → 保留個性化特徵 → 語意連貫性提升
+   - 從原始對話到訓練樣本，信噪比逐步提高
+   - 標準化處理實現了可擴展的資料清洗流程
+
+4. **語言特徵捕捉技巧**
+   - 從機械式清洗到語意理解式清洗的進化
+   - 記錄口頭禪、標點習慣等微妙特徵並融入提示詞
+   - 去除特定時間地點，保留普適性表達
+
+## 目前進度與後續計劃
+
+已完成高品質訓練資料的準備工作，獲得標準化且捕捉個人語氣特色的對話樣本，為實際模型微調奠定了堅實基礎。
+
+後續計劃：
+- 使用清洗後的資料進行實際模型微調
+- 建立評估指標，測試微調效果
+- 探索少量樣本（few-shot）微調技術
+- 考慮建立自動化資料清洗管道
+
+[返回主頁](index.html)

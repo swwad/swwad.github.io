@@ -1,51 +1,50 @@
-# 林定逸 / Darren Lin - 技術專長
+# 林定逸 / Darren Lin
 
-## 技術概述
-資深軟體開發工程師，具備豐富的系統分析與開發經驗。專長於技術合約撰寫、規格規劃與制訂。熟悉 Windows、Android 及 MS-SQL Server 應用開發，在 Git flow 與多人協同開發環境具有多年經驗。
+## 關於我
+資深軟體開發工程師，在系統分析與開發方面擁有豐富經驗。專精於規格制訂、技術合約撰寫及系統架構設計。
 
 ## 聯絡資訊
 - Email: swwad1@gmail.com
 
-## 技術專長
+## 專業技能
 
-### 系統分析與開發
-- SA / SD / ERP / POS
-- 系統開發與介接
-- 規格確認 / 制訂 / 撰寫
-- 技術合約規劃及撰寫
-- Git / SVN / VSS 版本控管
+### 系統分析與架構設計
+- 系統分析 / 軟體設計 / 企業資源規劃
+- 技術規格制訂與合約撰寫
+- Git flow 多人協作開發流程管理
+- 版本控管 (Git / SVN / VSS)
 
-### 程式開發與技術
+### 程式開發與技術實作
 - C#、Java 程式開發
-- MS-SQL 開發與效能調校
-- 軟硬體加解密機制規劃
-- Socket / RS232 通訊
-- TCP/IP and Client Server 架構
-- Sniffer / Reverse Engineering
-- 藍芽 / BLE 相關技術
-
-### AI 與機器學習
-- [大型語言模型訓練與微調技術](https://swwad.github.io/llm-finetuning)
+- MS-SQL Server 開發與效能調校
+- 資料加解密與安全機制
+- 通訊協定 (Socket / TCP/IP / RS232)
+- 藍芽 / BLE 相關技術實作
 
 ## 開發領域
 
 ### 金融科技
-- 信用卡授權及發卡系統 (Web Form in IIS / DB in SQL Server)
-- ISO8583 交易電文處理 (Socket TCP/IP Binary)
-- 檔案加解密機制處理
-- HSM 檔案加解密機制
+- 信用卡授權及發卡系統整合
+- ISO8583 交易電文處理
+- 金融資料安全加解密機制
+- HSM 硬體安全模組整合
 
 ### 企業應用
-- 車輛分期系統 (Web Form in IIS / DB in SQL Server)
-- 行動應用開發 (RWD / MVC API / DB in SQL Server)
-- 金融徵信系統介接
-- Flow 與行動簽核系統
-- SQL Server 儲存過程與函數開發
-- 報表設計 (Smart-Query、SSRS)
-- Line Bot MVC API
+- 企業流程自動化系統
+- 行動應用開發 (RWD / MVC API)
+- 資料庫與儲存過程優化
+- 報表設計與資料視覺化
+- Line Bot 整合與應用
 
 ### 物聯網與智慧裝置
-- 智慧穿戴裝置韌體開發
-- 智慧家電/BLE 體重計周邊 APP
-- 無線串流監看系統
-- Bluetooth TPMS 胎壓偵測系統
+- 智慧穿戴裝置開發
+- 家電 / 體重計 APP 整合
+- 無線監控系統
+- 藍芽胎壓偵測系統 (TPMS)
+
+## 近期專案
+
+### [LLM 模型微調實驗](llm-finetuning.html)
+探索如何將日常對話資料轉化為訓練資料集，為 LLM 進行個人化微調。從原始對話記錄的清洗、轉換，到資料集的最終形成，記錄整個資料處理流程。透過這個項目，我嘗試探索 AI 在個人化互動上的可能性。
+
+[查看完整學習筆記 →](llm-finetuning.html)
